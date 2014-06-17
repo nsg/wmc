@@ -83,11 +83,18 @@ class MarkWindow(wx.Frame):
         self.panel.SetFocus()
         self.panel.SetBackgroundColour('#a70000')
 
+        self.text("    WMC")
+
         if wx.Platform == '__WXGTK__':
             self.Bind(wx.EVT_WINDOW_CREATE, self.SetRoundShape)
         else:
             self.SetRoundShape()
         self.Show(True)
+
+    def text(self, s):
+        self.panel.DestroyChildren()
+        text = wx.StaticText(self.panel, pos=(5,30), label=s)
+        text.SetForegroundColour((255,255,255))
 
     def SetRoundShape(self, event=None):
         w, h = self.GetSizeTuple()
