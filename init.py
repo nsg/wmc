@@ -159,20 +159,20 @@ class MarkWindow(wx.Frame):
             ))
             self.text("pid: " + str(w.pid(MarkWindow.selwin)))
             print w.window(MarkWindow.selwin)
-        if keycode == ord('V'):
-            w = Windows()
-            w_id = w.w_id(MarkWindow.selwin)
-            w.focus(w_id)
-            w.focus(w.w_id_self())
         if keycode == ord('F'):
             w = Windows()
             w_id = w.w_id(MarkWindow.selwin)
             w.focus(w_id)
+            w.focus(w.w_id_self())
+        if keycode == ord('A'):
+            w = Windows()
+            w_id = w.w_id(MarkWindow.selwin)
+            w.focus(w_id)
             self.Close(force=True)
-        if keycode == ord('T'):
+        if keycode == ord('S'):
             self.panel.SetBackgroundColour('#395ee8')
             MarkWindow.tagMode = 1
-        if keycode == ord('S'):
+        if keycode == ord('T'):
             self.panel.SetBackgroundColour('#f9c423')
             MarkWindow.tagMode = 2
             
