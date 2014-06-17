@@ -157,6 +157,7 @@ class MarkWindow(wx.Frame):
                 w.abs_x(MarkWindow.selwin) + w.width(MarkWindow.selwin) / 2 - 25,
                 w.abs_y(MarkWindow.selwin) + w.height(MarkWindow.selwin) / 2 - 25
             ))
+            self.text("pid: " + str(w.pid(MarkWindow.selwin)))
             print w.window(MarkWindow.selwin)
         if keycode == ord('V'):
             w = Windows()
