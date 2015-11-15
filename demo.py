@@ -9,7 +9,6 @@ class ConfigMWC():
     _settings = {}
 
     def __init__(self):
-        print self.config_file
         if os.path.isfile(self.config_file):
             with open(self.config_file, 'r') as fh:
                 self._settings = yaml.load(fh)
@@ -27,14 +26,14 @@ class ConfigMWC():
 class UI(Gtk.Window):
 
     search_mode = False
+    tag_mode = False
     search_string = "";
     search_last_window = None
 
     def __init__(self):
         super(UI, self).__init__()
 
-        config = ConfigMWC()
-        print(config.settings())
+        self.config = ConfigMWC()
 
         self.set_app_paintable(True)
         #self.set_type_hint(Gdk.WindowTypeHint.NOTIFICATION)
@@ -83,10 +82,20 @@ class UI(Gtk.Window):
              Gtk.main_quit()
              return
 
+        if self.tag_mode:
+            self.tag_mode = False
+            if self.config.get("search") and event.string in self.config.get("search"):
+                self.search_mode = True
+                self.search_string = self.config.get("search")[event.string]
+                self.update_text("Search Mode")
+            else:
+                self.update_text("Ready")
+                return
+
         if self.search_mode:
             if event.string == '\r': # Return
                 self.search_mode = False
-                print "Search mode: OFF"
+                self.search_string = ".*{}.*".format(self.search_string)
             if event.string == '\x08': # Backspace
                 self.search_string = self.search_string[:-1]
             else:
@@ -94,22 +103,27 @@ class UI(Gtk.Window):
 
             m = []
             for window in screen.get_windows():
-                if re.match(".*" +self.search_string+ ".*", window.get_name(), flags=re.IGNORECASE):
+                if re.match(self.search_string, window.get_name(), flags=re.IGNORECASE):
                     m.append(window.get_name())
                     if not self.search_mode:
                         now = timestamp = Gtk.get_current_event_time()
                         window.activate(now)
                         self.search_last_window = window
                         self.focus()
+                        self.search_string = ""
                         return
 
-            self.update_text("▶ " + self.search_string + "\n\n" + "\n".join(m))
+            self.update_text("▶ {}\n\n{}".format(self.search_string, "\n".join(m)))
             return
 
-        elif event.string == "/":
+        if event.string == "/":
             self.update_text("Search Mode")
+            self.search_string = ""
             self.search_mode = True
-            print "Search mode: ON"
+
+        elif event.string == "q":
+            self.update_text("Quick Search Mode")
+            self.tag_mode = True
 
         elif self.search_last_window:
             if event.string == "m":
