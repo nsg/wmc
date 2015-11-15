@@ -2,7 +2,27 @@
 # -*- coding: utf-8 -*-
 
 from gi.repository import Gtk, Gdk, GLib, Pango, Wnck
-import cairo, inspect, pprint, re
+import cairo, inspect, pprint, re, os.path, yaml
+
+class ConfigMWC():
+    config_file = os.environ['HOME'] + "/.wmc-config.yml"
+    _settings = {}
+
+    def __init__(self):
+        print self.config_file
+        if os.path.isfile(self.config_file):
+            with open(self.config_file, 'r') as fh:
+                self._settings = yaml.load(fh)
+
+    def settings(self):
+        return self._settings
+
+    def get(self, key):
+        if key in self._settings:
+            return self._settings[key]
+        else:
+            return None
+
 
 class UI(Gtk.Window):
 
@@ -11,6 +31,9 @@ class UI(Gtk.Window):
 
     def __init__(self):
         super(UI, self).__init__()
+
+        config = ConfigMWC()
+        print(config.settings())
 
         self.set_app_paintable(True)
         #self.set_type_hint(Gdk.WindowTypeHint.NOTIFICATION)
