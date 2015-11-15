@@ -1,10 +1,12 @@
 #!/usr/bin/python
 
-from gi.repository import Gtk, Gdk, GLib, Pango
-import cairo
-import inspect, pprint
+from gi.repository import Gtk, Gdk, GLib, Pango, Wnck
+import cairo, inspect, pprint, re
 
 class UI(Gtk.Window):
+
+    search_mode = False
+    search_string = "";
 
     def __init__(self):
         super(UI, self).__init__()
@@ -47,11 +49,46 @@ class UI(Gtk.Window):
     def on_key_press(self, widget, event):
         global text
 
-        if event.string == "q":
+        if event.string == '\x1b': # ESC
              Gtk.main_quit()
+             return
 
-        elif event.string == "f":
-             self.update_text("Search for:")
+        if self.search_mode:
+            if event.string == '\r': # Return
+                self.search_mode = False
+                print "Search mode: OFF"
+            if event.string == '\x08': # Backspace
+                self.search_string = self.search_string[:-1]
+            else:
+                self.search_string = self.search_string + event.string.strip()
+
+            screen = Wnck.Screen.get_default()
+            screen.force_update()
+            m = []
+            for window in screen.get_windows():
+                print self.search_string
+                if re.match(".*" +self.search_string+ ".*", window.get_name(), flags=re.IGNORECASE):
+                    m.append(window.get_name())
+                    if not self.search_mode:
+                        now = timestamp = Gtk.get_current_event_time()
+                        window.activate(now)
+                        Gtk.main_quit()
+                        return
+
+            self.update_text(self.search_string + "\n\n" + "\n".join(m))
+            return
+
+        elif event.string == "/":
+            self.update_text("Search for:")
+            self.search_mode = True
+            print "Search mode: ON"
+
+        elif event.string == "s":
+            screen = Wnck.Screen.get_default()
+            screen.force_update()
+            for window in screen.get_windows():
+                if re.match(".*Spotify.*", window.get_name()):
+                    window.activate(0)
 
         else:
             pp = pprint.PrettyPrinter(indent=4)
