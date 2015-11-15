@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from gi.repository import Gtk, Gdk, GLib, Pango, Wnck
-import cairo, inspect, pprint, re, os.path, yaml
+import cairo, inspect, pprint, re, os.path, yaml, time
 
 class ConfigMWC():
     config_file = os.environ['HOME'] + "/.wmc-config.yml"
@@ -28,6 +28,7 @@ class UI(Gtk.Window):
 
     search_mode = False
     search_string = "";
+    search_last_window = None
 
     def __init__(self):
         super(UI, self).__init__()
@@ -73,6 +74,11 @@ class UI(Gtk.Window):
     def on_key_press(self, widget, event):
         global text
 
+        screen = Wnck.Screen.get_default()
+        screen.force_update()
+        self.resize(screen.get_width(), screen.get_height())
+        self.active_window = screen.get_active_window()
+
         if event.string == '\x1b': # ESC
              Gtk.main_quit()
              return
@@ -86,8 +92,6 @@ class UI(Gtk.Window):
             else:
                 self.search_string = self.search_string + event.string.strip()
 
-            screen = Wnck.Screen.get_default()
-            screen.force_update()
             m = []
             for window in screen.get_windows():
                 if re.match(".*" +self.search_string+ ".*", window.get_name(), flags=re.IGNORECASE):
@@ -95,7 +99,8 @@ class UI(Gtk.Window):
                     if not self.search_mode:
                         now = timestamp = Gtk.get_current_event_time()
                         window.activate(now)
-                        Gtk.main_quit()
+                        self.search_last_window = window
+                        self.focus()
                         return
 
             self.update_text("▶ " + self.search_string + "\n\n" + "\n".join(m))
@@ -106,16 +111,24 @@ class UI(Gtk.Window):
             self.search_mode = True
             print "Search mode: ON"
 
-        elif event.string == "s":
-            screen = Wnck.Screen.get_default()
-            screen.force_update()
-            for window in screen.get_windows():
-                if re.match(".*Spotify.*", window.get_name()):
-                    window.activate(0)
+        elif self.search_last_window:
+            if event.string == "m":
+                self.search_last_window.minimize()
+            elif event.string == "M":
+                self.search_last_window.maximize()
+            elif event.string == "-":
+                self.search_last_window.unminimize(Gtk.get_current_event_time())
 
-        else:
-            pp = pprint.PrettyPrinter(indent=4)
-            pp.pprint(inspect.getmembers(event))
+            self.focus()
+
+        #else:
+        #    pp = pprint.PrettyPrinter(indent=4)
+        #    pp.pprint(inspect.getmembers(event))
+
+    def focus(self):
+        time.sleep(1)
+        now = timestamp = Gtk.get_current_event_time()
+        self.active_window.activate(now + 1)
 
     def update_text(self, text):
         self.lbl.set_text(text)
