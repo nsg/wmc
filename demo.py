@@ -82,6 +82,9 @@ class UI(Gtk.Window):
              Gtk.main_quit()
              return
 
+        if self.search_mode:
+                self.search_string = self.search_string + event.string.strip()
+
         if self.tag_mode:
             self.tag_mode = False
             if self.config.get("search") and event.string in self.config.get("search"):
@@ -95,11 +98,9 @@ class UI(Gtk.Window):
         if self.search_mode:
             if event.string == '\r': # Return
                 self.search_mode = False
-                self.search_string = ".*{}.*".format(self.search_string)
+                self.search_string = ".*{}.*".format(self.search_string[:-1])
             if event.string == '\x08': # Backspace
-                self.search_string = self.search_string[:-1]
-            else:
-                self.search_string = self.search_string + event.string.strip()
+                self.search_string = self.search_string[:-2]
 
             m = []
             for window in screen.get_windows():
