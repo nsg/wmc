@@ -22,16 +22,30 @@ class ConfigMWC():
         else:
             return None
 
+    def set_tag(self, k, v):
+        print "Save window {1} as tag {0}".format(k, v)
+        if not 'search' in self._settings:
+            self._settings['search'] = {}
+        self._settings['search'][k] = { "xid": v }
+
 
 class UI(Gtk.Window):
 
     search_mode = False
     tag_mode = False
+    set_tag = False
     search_string = "";
     search_last_window = None
     active_window = None
+    orig_window = None
 
     def __init__(self):
+
+        self.scr = Wnck.Screen.get_default()
+        self.scr.force_update()
+        self.scr.connect("active-window-changed", self.window_switch_handler)
+        self.orig_window = self.scr.get_active_window()
+
         super(UI, self).__init__()
 
         self.config = ConfigMWC()
@@ -54,10 +68,6 @@ class UI(Gtk.Window):
         self.connect("draw", self.on_draw)
 
         self.show_all()
-
-        self.scr = Wnck.Screen.get_default()
-        self.scr.force_update()
-        self.scr.connect("active-window-changed", self.window_switch_handler)
 
     def window_switch_handler(self, screen, window):
         if self.active_window:
@@ -95,8 +105,10 @@ class UI(Gtk.Window):
             self.tag_mode = False
             if self.config.get("search") and event.string in self.config.get("search"):
                 self.search_mode = True
-                self.search_string = self.config.get("search")[event.string]
                 self.update_text("Search Mode")
+
+                if 're' in self.config.get("search")[event.string]:
+                    self.search_string = self.config.get("search")[event.string]['re']
             else:
                 self.update_text("Ready")
                 return
@@ -109,6 +121,19 @@ class UI(Gtk.Window):
                 self.search_string = self.search_string[:-2]
 
             m = []
+
+            # Temporary xid tags
+            if self.config.get("search") and event.string in self.config.get("search"):
+                if 'xid' in self.config.get("search")[event.string]:
+                    for w in self.scr.get_windows():
+                        if w.get_xid() == self.config.get("search")[event.string]['xid']:
+                            self.search_mode = False
+                            w.activate(Gtk.get_current_event_time())
+                            self.focus()
+                            self.search_string = ""
+                            return
+
+            # Saved tag searches in .wmc-config.yml
             for window in self.scr.get_windows():
                 if re.match(self.search_string, window.get_name(), flags=re.IGNORECASE):
                     m.append(window.get_name())
@@ -123,6 +148,14 @@ class UI(Gtk.Window):
             self.update_text("▶ {}\n\n{}".format(self.search_string, "\n".join(m)))
             return
 
+        if self.set_tag:
+            self.config.set_tag(event.string, self.orig_window.get_xid())
+            self.set_tag = False
+            print("Config updated to:")
+            pp = pprint.PrettyPrinter(indent=4)
+            pp.pprint(self.config.settings())
+            return
+
         if event.string == "/":
             self.update_text("Search Mode")
             self.search_string = ""
@@ -131,6 +164,10 @@ class UI(Gtk.Window):
         elif event.string == "q":
             self.update_text("Quick Search Mode")
             self.tag_mode = True
+
+        elif event.string == "t":
+            self.update_text("Set Tag Mode")
+            self.set_tag = True
 
         elif self.search_last_window:
             if event.string == "m":
