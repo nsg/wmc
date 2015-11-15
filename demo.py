@@ -29,6 +29,7 @@ class UI(Gtk.Window):
     tag_mode = False
     search_string = "";
     search_last_window = None
+    active_window = None
 
     def __init__(self):
         super(UI, self).__init__()
@@ -54,6 +55,14 @@ class UI(Gtk.Window):
 
         self.show_all()
 
+        self.scr = Wnck.Screen.get_default()
+        self.scr.force_update()
+        self.scr.connect("active-window-changed", self.window_switch_handler)
+
+    def window_switch_handler(self, screen, window):
+        if self.active_window:
+            self.focus()
+
     def draw_ui(self):
 
         self.lbl = Gtk.Label()
@@ -71,11 +80,8 @@ class UI(Gtk.Window):
         cr.set_operator(cairo.OPERATOR_OVER)
 
     def on_key_press(self, widget, event):
-        global text
 
-        screen = Wnck.Screen.get_default()
-        screen.force_update()
-        self.active_window = screen.get_active_window()
+        self.active_window = self.scr.get_active_window()
         self.active_window.set_fullscreen(Gtk.get_current_event_time())
 
         if event.string == '\x1b': # ESC
@@ -103,7 +109,7 @@ class UI(Gtk.Window):
                 self.search_string = self.search_string[:-2]
 
             m = []
-            for window in screen.get_windows():
+            for window in self.scr.get_windows():
                 if re.match(self.search_string, window.get_name(), flags=re.IGNORECASE):
                     m.append(window.get_name())
                     if not self.search_mode:
@@ -141,9 +147,9 @@ class UI(Gtk.Window):
         #    pp.pprint(inspect.getmembers(event))
 
     def focus(self):
-        time.sleep(1)
+        time.sleep(0.2)
         now = timestamp = Gtk.get_current_event_time()
-        self.active_window.activate(now + 1)
+        self.active_window.activate(now)
 
     def update_text(self, text):
         self.lbl.set_text(text)
@@ -153,6 +159,8 @@ class UI(Gtk.Window):
 def main():
 
     app = UI()
+    while Gtk.events_pending():
+        Gtk.main_iteration()
     Gtk.main()
 
 
