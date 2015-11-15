@@ -75,8 +75,8 @@ class UI(Gtk.Window):
 
         screen = Wnck.Screen.get_default()
         screen.force_update()
-        self.resize(screen.get_width(), screen.get_height())
         self.active_window = screen.get_active_window()
+        self.active_window.set_fullscreen(Gtk.get_current_event_time())
 
         if event.string == '\x1b': # ESC
              Gtk.main_quit()
