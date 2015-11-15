@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from gi.repository import Gtk, Gdk, GLib, Pango, Wnck
-import cairo, inspect, pprint, re, os.path, yaml, time
+import cairo, inspect, pprint, re, os.path, yaml, time, json
 
 class ConfigMWC():
     config_file = os.environ['HOME'] + "/.wmc-config.yml"
@@ -28,6 +28,15 @@ class ConfigMWC():
             self._settings['search'] = {}
         self._settings['search'][k] = { "xid": v }
 
+    def save(self):
+        f = open("/tmp/wmc-tagfile.dat", "w")
+        f.write(json.dumps(self._settings))
+        f.close()
+
+    def load(self):
+        if os.path.isfile("/tmp/wmc-tagfile.dat"):
+            with open("/tmp/wmc-tagfile.dat", 'r') as fh:
+                self._settings = json.load(fh)
 
 class UI(Gtk.Window):
 
@@ -49,6 +58,7 @@ class UI(Gtk.Window):
         super(UI, self).__init__()
 
         self.config = ConfigMWC()
+        self.config.load()
 
         self.set_app_paintable(True)
         #self.set_type_hint(Gdk.WindowTypeHint.NOTIFICATION)
@@ -129,6 +139,7 @@ class UI(Gtk.Window):
                         if w.get_xid() == self.config.get("search")[event.string]['xid']:
                             self.search_mode = False
                             w.activate(Gtk.get_current_event_time())
+                            self.search_last_window = w
                             self.focus()
                             self.search_string = ""
                             return
@@ -143,6 +154,8 @@ class UI(Gtk.Window):
                         self.search_last_window = window
                         self.focus()
                         self.search_string = ""
+                        self.update_text("Ready")
+                        self.search_mode = False
                         return
 
             self.update_text("▶ {}\n\n{}".format(self.search_string, "\n".join(m)))
@@ -150,10 +163,8 @@ class UI(Gtk.Window):
 
         if self.set_tag:
             self.config.set_tag(event.string, self.orig_window.get_xid())
+            self.config.save()
             self.set_tag = False
-            print("Config updated to:")
-            pp = pprint.PrettyPrinter(indent=4)
-            pp.pprint(self.config.settings())
             return
 
         if event.string == "/":
