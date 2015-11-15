@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 from gi.repository import Gtk, Gdk, GLib, Pango, Wnck
 import cairo, inspect, pprint, re
@@ -66,7 +67,6 @@ class UI(Gtk.Window):
             screen.force_update()
             m = []
             for window in screen.get_windows():
-                print self.search_string
                 if re.match(".*" +self.search_string+ ".*", window.get_name(), flags=re.IGNORECASE):
                     m.append(window.get_name())
                     if not self.search_mode:
@@ -75,11 +75,11 @@ class UI(Gtk.Window):
                         Gtk.main_quit()
                         return
 
-            self.update_text(self.search_string + "\n\n" + "\n".join(m))
+            self.update_text("▶ " + self.search_string + "\n\n" + "\n".join(m))
             return
 
         elif event.string == "/":
-            self.update_text("Search for:")
+            self.update_text("Search Mode")
             self.search_mode = True
             print "Search mode: ON"
 
